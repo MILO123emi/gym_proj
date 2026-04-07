@@ -1,28 +1,16 @@
 <script setup>
-import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue';
-import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
-defineProps({
-    canResetPassword: {
-        type: Boolean,
-    },
-    status: {
-        type: String,
-    },
-});
 
 const form = useForm({
-    email: '',
+    email: '', 
     password: '',
     remember: false,
 });
 
 const submit = () => {
+   
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
     });
@@ -30,71 +18,71 @@ const submit = () => {
 </script>
 
 <template>
-    <GuestLayout>
-        <Head title="Log in" />
+    <Head title="Sistema de Gestión - Login" />
 
-        <div v-if="status" class="mb-4 text-sm font-medium text-green-600">
-            {{ status }}
-        </div>
-
-        <form @submit.prevent="submit">
-            <div>
-                <InputLabel for="email" value="Email" />
-
-                <TextInput
-                    id="email"
-                    type="email"
-                    class="mt-1 block w-full"
-                    v-model="form.email"
-                    required
-                    autofocus
-                    autocomplete="username"
-                />
-
-                <InputError class="mt-2" :message="form.errors.email" />
+    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gym-dark-bg bg-[radial-gradient(#1a1a1a_1px,transparent_1px)] [background-size:16px_16px]">
+        
+        <div class="w-full sm:max-w-md mt-6 px-10 py-12 bg-gym-card-bg shadow-xl overflow-hidden sm:rounded-2xl border border-gym-gray-border flex flex-col items-center">
+            
+            <div class="p-4 rounded-full bg-gym-green/10 border-2 border-gym-green mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-gym-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H6"></path>
+                    <path d="M14 18h2a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"></path>
+                    <path d="M3 12h18"></path>
+                    <circle cx="21" cy="12" r="1"></circle>
+                    <circle cx="3" cy="12" r="1"></circle>
+                </svg>
             </div>
 
-            <div class="mt-4">
-                <InputLabel for="password" value="Password" />
+            <h1 class="text-3xl font-extrabold text-white mb-1">Sistema de Gestión</h1>
+            <p class="text-lg text-gym-gray-text mb-10 font-medium">Gimnasio</p>
 
-                <TextInput
-                    id="password"
-                    type="password"
-                    class="mt-1 block w-full"
-                    v-model="form.password"
-                    required
-                    autocomplete="current-password"
-                />
+            <form @submit.prevent="submit" class="w-full space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-semibold text-gym-gray-text mb-2">Usuario</label>
+                    <div class="relative">
+                        <input 
+                            id="email" 
+                            type="text" 
+                            v-model="form.email"
+                            placeholder="Ingrese su usuario"
+                            class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green focus:border-gym-green transition-all duration-150 placeholder:text-gym-gray-text/60"
+                            required 
+                            autofocus 
+                        />
+                    </div>
+                </div>
 
-                <InputError class="mt-2" :message="form.errors.password" />
-            </div>
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-gym-gray-text mb-2">Contraseña</label>
+                    <div class="relative">
+                        <input 
+                            id="password" 
+                            type="password" 
+                            v-model="form.password"
+                            placeholder="Ingrese su contraseña"
+                            class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green focus:border-gym-green transition-all duration-150 placeholder:text-gym-gray-text/60"
+                            required 
+                        />
+                    </div>
+                </div>
 
-            <div class="mt-4 block">
-                <label class="flex items-center">
-                    <Checkbox name="remember" v-model:checked="form.remember" />
-                    <span class="ms-2 text-sm text-gray-600"
-                        >Remember me</span
+                <div class="pt-2">
+                    <button 
+                        type="submit" 
+                        class="w-full flex justify-center items-center px-6 py-4 bg-gym-green text-white font-bold text-lg rounded-xl hover:bg-gym-green-hover focus:outline-none focus:ring-2 focus:ring-gym-green focus:ring-offset-2 focus:ring-offset-gym-card-bg transition-colors duration-150 disabled:opacity-50"
+                        :disabled="form.processing"
                     >
-                </label>
-            </div>
+                        <span v-if="form.processing">Ingresando...</span>
+                        <span v-else>Ingresar al Sistema</span>
+                    </button>
+                </div>
+            </form>
 
-            <div class="mt-4 flex items-center justify-end">
-                <Link
-                    v-if="canResetPassword"
-                    :href="route('password.request')"
-                    class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                    Forgot your password?
-                </Link>
-
-                <PrimaryButton
-                    class="ms-4"
-                    :class="{ 'opacity-25': form.processing }"
-                    :disabled="form.processing"
-                >
-                    Log in
-                </PrimaryButton>
+            <div class="mt-12 text-center text-xs text-gym-gray-text">
+                <p>Credenciales de prueba:</p>
+                <p class="font-mono mt-1">admin / admin123 o recepcionista / recep123</p>
             </div>
-        </form>
-    </GuestLayout>
+        </div>
+    </div>
 </template>

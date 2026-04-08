@@ -82,6 +82,8 @@ const submit = () => {
                     />
                 </div>
 
+                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
                         <label for="telefono" class="block text-sm font-semibold text-gym-gray-text mb-2.5">Teléfono</label>

@@ -69,12 +69,16 @@ import { Link } from '@inertiajs/vue3';
                     Reportes Financieros
                 </Link>
 
-                <Link :href="route('empleados.gestion')" 
-                    :class="route().current('empleados.gestion') ? 'bg-[#00a878] text-black' : 'text-gray-400 hover:bg-white/5'"
-                    class="flex items-center gap-3 p-3 rounded-xl transition-all font-bold text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    Gestión Empleados
-                </Link>
+      <Link 
+    :href="route('empleados.gestion')" 
+    :class="route().current('empleados.gestion') ? 'bg-[#00BFA5] text-white' : 'text-gray-400 hover:bg-[#1E1E1E]'"
+    class="flex items-center p-3 rounded-lg transition-colors duration-200"
+>
+    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+    </svg>
+    <span>Gestión Empleados</span>
+</Link>
 
                 <Link :href="route('soporte.directorio')" 
                     :class="route().current('soporte.directorio') ? 'bg-[#00a878] text-black' : 'text-gray-400 hover:bg-white/5'"

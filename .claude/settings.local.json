@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -X POST http://127.0.0.1:8000/login -d \"email=admin@gimnasio.com&password=password\" -H \"Accept: application/json\" -H \"Content-Type: application/x-www-form-urlencoded\" -c /tmp/cookies.txt -v)",
+      "Bash(curl -X GET http://127.0.0.1:8000/login -H \"Accept: text/html\" -c /tmp/cookies.txt -b /tmp/cookies.txt -v)",
+      "Bash(curl -X GET http://127.0.0.1:8000/login -H \"Accept: text/html\" -c /tmp/cookies.txt)",
+      "Bash(curl -X POST http://127.0.0.1:8000/login -H \"Accept: application/json\" -H \"Content-Type: application/json\" -H \"X-XSRF-TOKEN: test\" -H \"X-Requested-With: XMLHttpRequest\" -d '{\"email\":\"admin@gimnasio.com\",\"password\":\"password\"}' -c /tmp/cookies.txt -b /tmp/cookies.txt -v)",
+      "Bash(curl -s http://127.0.0.1:8000/login -c /tmp/cookies.txt)"
+    ]
+  }
+}

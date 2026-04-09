@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
+    protected static function booted(): void
+    {
+        static::saved(function (Payment $payment) {
+            $payment->membership?->recalculateEstado();
+        });
+
+        static::deleted(function (Payment $payment) {
+            $payment->membership?->recalculateEstado();
+        });
+    }
+
     protected $fillable = [
         'membership_id',
         'monto',

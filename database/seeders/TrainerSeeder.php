@@ -2,16 +2,30 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Trainer;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class TrainerSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        //
+        $especialidades = ['Fuerza', 'Resistencia', 'Recomposicion corporal', 'Movilidad'];
+
+        $trainerUsers = User::query()
+            ->where('role', 'trainer')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($trainerUsers as $index => $user) {
+            Trainer::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'especialidad' => $especialidades[$index % count($especialidades)],
+                    'bio' => 'Entrenador certificado para programas personalizados.',
+                    'estado' => 'activo',
+                ]
+            );
+        }
     }
 }

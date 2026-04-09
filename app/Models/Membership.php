@@ -55,6 +55,29 @@ class Membership extends Model
             ->where('estado', 'vencido');
     }
 
+    public function recalculateEstado(): void
+    {
+        $hasOverdue = $this->payments()
+            ->where('estado', 'vencido')
+            ->exists();
+
+        if ($hasOverdue) {
+            $this->forceFill(['estado' => 'vencida'])->saveQuietly();
+            return;
+        }
+
+        $hasPending = $this->payments()
+            ->where('estado', 'pendiente')
+            ->exists();
+
+        if ($hasPending) {
+            $this->forceFill(['estado' => 'pendiente'])->saveQuietly();
+            return;
+        }
+
+        $this->forceFill(['estado' => 'activa'])->saveQuietly();
+    }
+
     // ─── Helpers ──────────────────────────────────────────────
 
     public function isActive(): bool

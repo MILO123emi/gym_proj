@@ -1,32 +1,21 @@
 <script setup>
 import GymLayout from '@/Layouts/GymLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-
-const clienteSeleccionado = ref({
-    id: 1,
-    nombre: 'Florentino Guevara',
-    email: 'florentino@email.com',
-    tel: '3536-0101',
-    direccion: 'Calle Principal #123',
-    estado: 'Mora',
-    plan: 'Mensual',
-    vencimiento: '2026-03-10',
-    rutina: 'Ganancia Muscular',
-    entrenador: 'Mauricio Rivera',
-    pagos: [
-        { monto: '$500 MXN', fecha: '2026-02-10', metodo: 'Efectivo' },
-        { monto: '$500 MXN', fecha: '2026-01-10', metodo: 'Tarjeta' }
-    ]
+const props = defineProps({
+    clients: {
+        type: Array,
+        default: () => [],
+    },
 });
 
+const selectedId = ref(props.clients[0]?.id || null);
 
-const clientes = ref([
-    { id: 1, nombre: 'Florentino Guevara', tel: '555-0101', estado: 'Mora' },
-    { id: 2, nombre: 'Mikel Romero', tel: '9894-0102', estado: 'Activo' },
-    { id: 3, nombre: 'Leonardo Hernandez', tel: '9885-0103', estado: 'Inactivo' },
-]);
+const clientes = computed(() => props.clients);
+const clienteSeleccionado = computed(() => {
+    return props.clients.find(c => c.id === selectedId.value) || props.clients[0] || null;
+});
 </script>
 
 <template>
@@ -51,8 +40,8 @@ const clientes = ref([
 
                     <div class="space-y-3">
                         <div v-for="c in clientes" :key="c.id" 
-                            @click="clienteSeleccionado = {...clienteSeleccionado, nombre: c.nombre, estado: c.estado}"
-                            :class="[c.nombre === clienteSeleccionado.nombre ? 'border-[#00BFA5] bg-[#00BFA5]/5' : 'border-white/5 bg-white/5']"
+                            @click="selectedId = c.id"
+                            :class="[c.id === selectedId ? 'border-[#00BFA5] bg-[#00BFA5]/5' : 'border-white/5 bg-white/5']"
                             class="p-4 rounded-xl border flex justify-between items-center cursor-pointer hover:bg-white/10 transition group">
                             <div>
                                 <p class="font-bold text-sm text-white">{{ c.nombre }}</p>
@@ -67,15 +56,29 @@ const clientes = ref([
                 </div>
 
                 <div class="lg:col-span-8 bg-[#111111] border border-white/5 rounded-2xl p-8 shadow-xl">
-                    <div class="flex justify-between items-start mb-8">
+                    <div v-if="!clienteSeleccionado" class="text-center py-16 text-gray-400">
+                        No hay clientes para mostrar.
+                    </div>
+
+                    <template v-else>
+                    <div v-if="clienteSeleccionado" class="flex justify-between items-start mb-8">
                         <div>
                             <h2 class="text-2xl font-bold text-white">{{ clienteSeleccionado.nombre }}</h2>
                             <p class="text-gray-500 text-sm">{{ clienteSeleccionado.email }}</p>
                         </div>
-                        <span class="text-red-500 bg-red-500/10 px-3 py-1 rounded border border-red-500/20 text-xs font-bold uppercase">Mora</span>
+                        <span
+                            :class="{
+                                'text-red-500 bg-red-500/10 border-red-500/20': clienteSeleccionado.estado === 'Mora',
+                                'text-[#00BFA5] bg-[#00BFA5]/10 border-[#00BFA5]/20': clienteSeleccionado.estado === 'Activo',
+                                'text-gray-500 bg-gray-500/10 border-gray-500/20': clienteSeleccionado.estado === 'Inactivo',
+                            }"
+                            class="px-3 py-1 rounded border text-xs font-bold uppercase"
+                        >
+                            {{ clienteSeleccionado.estado }}
+                        </span>
                     </div>
 
-                    <div v-if="clienteSeleccionado.estado === 'Mora'" class="bg-red-950/20 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 mb-8">
+                    <div v-if="clienteSeleccionado && clienteSeleccionado.estado === 'Mora'" class="bg-red-950/20 border border-red-500/20 p-4 rounded-xl flex items-center gap-3 mb-8">
                         <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                         <div>
                             <p class="text-red-500 font-bold text-xs">Pago Vencido</p>
@@ -104,7 +107,7 @@ const clientes = ref([
                              <h3 class="text-[#00BFA5] text-[11px] font-bold uppercase mb-3 flex items-center gap-2 opacity-0">.</h3>
                              <div class="bg-white/5 p-3 rounded-lg border border-white/5 h-full">
                                 <p class="text-gray-500 text-[9px] uppercase">Dirección</p>
-                                <p class="text-white text-sm">{{ clienteSeleccionado.direccion }}</p>
+                                    <p class="text-white text-sm">{{ clienteSeleccionado.direccion || '-' }}</p>
                             </div>
                         </section>
                     </div>
@@ -118,11 +121,11 @@ const clientes = ref([
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="bg-white/5 p-3 rounded-lg border border-white/5">
                                     <p class="text-gray-500 text-[9px] uppercase">Tipo de Plan</p>
-                                    <p class="text-white text-sm">{{ clienteSeleccionado.plan }}</p>
+                                    <p class="text-white text-sm">{{ clienteSeleccionado.plan || '-' }}</p>
                                 </div>
                                 <div class="bg-white/5 p-3 rounded-lg border border-white/5">
                                     <p class="text-gray-500 text-[9px] uppercase">Vencimiento</p>
-                                    <p class="text-white text-sm">{{ clienteSeleccionado.vencimiento }}</p>
+                                    <p class="text-white text-sm">{{ clienteSeleccionado.vencimiento || '-' }}</p>
                                 </div>
                             </div>
                         </section>
@@ -134,11 +137,11 @@ const clientes = ref([
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="bg-white/5 p-3 rounded-lg border border-white/5">
                                     <p class="text-gray-500 text-[9px] uppercase">Rutina</p>
-                                    <p class="text-white text-sm">{{ clienteSeleccionado.rutina }}</p>
+                                    <p class="text-white text-sm">{{ clienteSeleccionado.rutina || '-' }}</p>
                                 </div>
                                 <div class="bg-white/5 p-3 rounded-lg border border-white/5">
                                     <p class="text-gray-500 text-[9px] uppercase">Entrenador</p>
-                                    <p class="text-white text-sm">{{ clienteSeleccionado.entrenador }}</p>
+                                    <p class="text-white text-sm">{{ clienteSeleccionado.entrenador || '-' }}</p>
                                 </div>
                             </div>
                         </section>
@@ -149,7 +152,8 @@ const clientes = ref([
                             Historial de Pagos
                         </h3>
                         <div class="space-y-3">
-                            <div v-for="pago in clienteSeleccionado.pagos" :key="pago.fecha" class="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                            <div v-if="!clienteSeleccionado.pagos?.length" class="text-gray-500 text-sm">Sin pagos registrados.</div>
+                            <div v-for="pago in (clienteSeleccionado.pagos || [])" :key="pago.fecha" class="bg-white/5 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                                 <div>
                                     <p class="text-white font-bold text-sm">{{ pago.monto }}</p>
                                     <p class="text-gray-500 text-[10px]">{{ pago.fecha }}</p>
@@ -158,6 +162,7 @@ const clientes = ref([
                             </div>
                         </div>
                     </section>
+                    </template>
                 </div>
             </div>
         </div>

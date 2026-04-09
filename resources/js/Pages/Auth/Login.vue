@@ -1,16 +1,13 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-
 
 const form = useForm({
-    email: '', 
+    email: '',
     password: '',
     remember: false,
 });
 
 const submit = () => {
-   
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
     });
@@ -51,6 +48,7 @@ const submit = () => {
                             autofocus 
                         />
                     </div>
+                    <p v-if="form.errors.email" class="mt-2 text-sm text-red-400">{{ form.errors.email }}</p>
                 </div>
 
                 <div>
@@ -65,6 +63,7 @@ const submit = () => {
                             required 
                         />
                     </div>
+                    <p v-if="form.errors.password" class="mt-2 text-sm text-red-400">{{ form.errors.password }}</p>
                 </div>
 
                 <div class="pt-2">
@@ -79,9 +78,11 @@ const submit = () => {
                 </div>
             </form>
 
-            <div class="mt-12 text-center text-xs text-gym-gray-text">
-                <p>Credenciales de prueba:</p>
-                <p class="font-mono mt-1">admin / admin123 o recepcionista / recep123</p>
+            <div class="mt-6 text-sm text-gym-gray-text">
+                <span>¿No tienes cuenta?</span>
+                <Link :href="route('register')" class="ml-2 text-gym-green font-semibold hover:underline">
+                    Regístrate
+                </Link>
             </div>
         </div>
     </div>

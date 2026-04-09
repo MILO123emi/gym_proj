@@ -1,57 +1,85 @@
 <script setup>
 import GymLayout from '@/Layouts/GymLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
-
-const clienteSeleccionado = ref({
-    id: 1,
-    nombre: 'Carlos Mendoza',
-    estado: 'Membresía activa',
-    modalidad: 'Con Entrenador'
+const props = defineProps({
+    clients: { type: Array, default: () => [] },
+    plans: { type: Array, default: () => [] },
+    trainers: { type: Array, default: () => [] },
 });
 
-const planSeleccionado = ref('Ganancia Muscular');
+const clientes = computed(() => props.clients);
 
+const selectedClientId = ref(props.clients[0]?.id || null);
+const clienteSeleccionado = computed(() => props.clients.find(c => c.id === selectedClientId.value) || props.clients[0] || null);
 
-const clientes = ref([
-    { id: 1, nombre: 'Florentino Guevara', estado: 'Membresía activa' },
-    { id: 2, nombre: 'Mikel Romero', estado: 'Membresía activa' },
-    { id: 3, nombre: 'Leonardo Hernandez', estado: 'Membresía vencida' },
-    { id: 4, nombre: 'Milexcy Perez', estado: 'Membresía activa' },
-    { id: 5, nombre: 'Denis Zuniga', estado: 'Membresía activa' },
-]);
+const selectedPlanId = ref(null);
+const modalidad = ref('asistido');
 
-const planes = [
-    { 
-        nombre: 'Pérdida de Peso', 
-        frecuencia: '4-5 días/semana', 
-        meta: 'Reducir grasa corporal', 
-        color: 'border-orange-500/30 bg-orange-500/10', 
-        iconColor: 'text-orange-500' 
+watch(
+    () => clienteSeleccionado.value,
+    (client) => {
+        selectedPlanId.value = client?.current_plan_id || props.plans[0]?.id || null;
     },
-    { 
-        nombre: 'Ganancia Muscular', 
-        frecuencia: '5-6 días/semana', 
-        meta: 'Aumentar masa muscular', 
-        color: 'border-blue-500/30 bg-blue-500/10', 
-        iconColor: 'text-blue-500' 
+    { immediate: true }
+);
+
+const form = useForm({
+    client_id: null,
+    training_plan_id: null,
+    trainer_id: null,
+    notas: '',
+});
+
+const selectedTrainerId = ref(props.trainers[0]?.id || null);
+
+const planes = computed(() => {
+    const colors = [
+        { color: 'border-orange-500/30 bg-orange-500/10', iconColor: 'text-orange-500' },
+        { color: 'border-blue-500/30 bg-blue-500/10', iconColor: 'text-blue-500' },
+        { color: 'border-red-500/30 bg-red-500/10', iconColor: 'text-red-500' },
+        { color: 'border-emerald-500/30 bg-emerald-500/10', iconColor: 'text-emerald-500' },
+    ];
+
+    return props.plans.map((p, idx) => {
+        const c = colors[idx % colors.length];
+        return {
+            ...p,
+            frecuencia: `${p.dias_semana || 0} días/semana`,
+            meta: p.descripcion || 'Plan personalizado',
+            color: c.color,
+            iconColor: c.iconColor,
+        };
+    });
+});
+
+const planesFiltrados = computed(() => {
+    return planes.value.filter((plan) => plan.tipo === modalidad.value);
+});
+
+const asignarPlan = () => {
+    if (!clienteSeleccionado.value || !selectedPlanId.value) return;
+
+    form.client_id = clienteSeleccionado.value.id;
+    form.training_plan_id = selectedPlanId.value;
+    form.trainer_id = selectedTrainerId.value;
+
+    form.post(route('plan-assignments.store'), {
+        preserveScroll: true,
+    });
+};
+
+watch(
+    () => modalidad.value,
+    () => {
+        const first = planesFiltrados.value[0];
+        if (first) {
+            selectedPlanId.value = first.id;
+        }
     },
-    { 
-        nombre: 'Resistencia', 
-        frecuencia: '3-4 días/semana', 
-        meta: 'Mejorar condición cardiovascular', 
-        color: 'border-red-500/30 bg-red-500/10', 
-        iconColor: 'text-red-500' 
-    },
-    { 
-        nombre: 'Acondicionamiento General', 
-        frecuencia: '3 días/semana', 
-        meta: 'Mantener forma física', 
-        color: 'border-emerald-500/30 bg-emerald-500/10', 
-        iconColor: 'text-emerald-500' 
-    },
-];
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -72,8 +100,8 @@ const planes = [
 
                 <div class="space-y-3">
                     <div v-for="c in clientes" :key="c.id" 
-                        @click="clienteSeleccionado = c"
-                        :class="[c.id === clienteSeleccionado.id ? 'border-[#00BFA5] bg-[#00BFA5]/5 text-white' : 'border-white/5 bg-white/5 text-gray-400']"
+                        @click="selectedClientId = c.id"
+                        :class="[c.id === selectedClientId ? 'border-[#00BFA5] bg-[#00BFA5]/5 text-white' : 'border-white/5 bg-white/5 text-gray-400']"
                         class="p-4 rounded-xl border flex justify-between items-center cursor-pointer hover:bg-white/10 transition group">
                         <span class="font-medium group-hover:text-white">{{ c.nombre }}</span>
                         <div v-if="c.estado === 'Membresía vencida'" class="flex items-center text-[10px] text-gray-600 italic">
@@ -87,8 +115,8 @@ const planes = [
             <div class="lg:col-span-8 bg-[#111111] border border-white/5 rounded-2xl p-8 shadow-xl">
                 
                 <div class="mb-8">
-                    <h2 class="text-3xl font-bold text-white">{{ clienteSeleccionado.nombre }}</h2>
-                    <p :class="clienteSeleccionado.estado === 'Membresía activa' ? 'text-[#00BFA5]' : 'text-red-500'" class="text-sm font-medium">
+                    <h2 class="text-3xl font-bold text-white">{{ clienteSeleccionado?.nombre || 'Sin clientes' }}</h2>
+                    <p v-if="clienteSeleccionado" :class="clienteSeleccionado.estado === 'Membresía activa' ? 'text-[#00BFA5]' : 'text-red-500'" class="text-sm font-medium">
                         {{ clienteSeleccionado.estado }}
                     </p>
                 </div>
@@ -96,27 +124,36 @@ const planes = [
                 <div class="mb-10">
                     <p class="text-gray-500 text-xs uppercase font-bold mb-4 tracking-widest">Modalidad</p>
                     <div class="grid grid-cols-2 gap-4">
-                        <button class="bg-white/5 border border-white/10 p-4 rounded-xl text-center hover:bg-white/10 transition group">
+                        <button @click="modalidad = 'libre'" :class="modalidad === 'libre' ? 'bg-[#00BFA5]/5 border-[#00BFA5]' : 'bg-white/5 border-white/10'" class="border p-4 rounded-xl text-center hover:bg-white/10 transition group">
                             <p class="text-white font-bold group-hover:text-[#00BFA5]">Libre</p>
                             <p class="text-gray-500 text-[10px]">Sin entrenador</p>
                         </button>
-                        <button class="bg-[#00BFA5]/5 border border-[#00BFA5] p-4 rounded-xl text-center shadow-[0_0_15px_rgba(0,191,165,0.1)]">
+                        <button @click="modalidad = 'asistido'" :class="modalidad === 'asistido' ? 'bg-[#00BFA5]/5 border-[#00BFA5]' : 'bg-white/5 border-white/10'" class="border p-4 rounded-xl text-center shadow-[0_0_15px_rgba(0,191,165,0.1)]">
                             <p class="text-[#00BFA5] font-bold">Con Entrenador</p>
                             <p class="text-[#00BFA5]/60 text-[10px]">Personalizado</p>
                         </button>
                     </div>
                 </div>
 
+                <div class="mb-10">
+                    <p class="text-gray-500 text-xs uppercase font-bold mb-4 tracking-widest">Entrenador</p>
+                    <select v-model="selectedTrainerId" class="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-[#00BFA5] focus:ring-0 transition">
+                        <option v-for="trainer in trainers" :key="trainer.id" :value="trainer.id">
+                            {{ trainer.name }}
+                        </option>
+                    </select>
+                </div>
+
                 <div>
                     <p class="text-gray-500 text-xs uppercase font-bold mb-4 tracking-widest">Plan de Entrenamiento</p>
                     <div class="space-y-4">
-                        <div v-for="plan in planes" :key="plan.nombre"
-                            @click="planSeleccionado = plan.nombre"
-                            :class="[planSeleccionado === plan.nombre ? plan.color + ' border-l-4' : 'bg-white/5 border-white/5 hover:bg-white/10']"
+                        <div v-for="plan in planesFiltrados" :key="plan.nombre"
+                            @click="selectedPlanId = plan.id"
+                            :class="[selectedPlanId === plan.id ? plan.color + ' border-l-4' : 'bg-white/5 border-white/5 hover:bg-white/10']"
                             class="p-5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-300">
                             
                             <div class="flex items-center gap-4">
-                                <div :class="planSeleccionado === plan.nombre ? plan.iconColor : 'text-gray-600'" class="p-2 bg-black/20 rounded-lg">
+                                <div :class="selectedPlanId === plan.id ? plan.iconColor : 'text-gray-600'" class="p-2 bg-black/20 rounded-lg">
                                     <svg v-if="plan.nombre === 'Pérdida de Peso'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                     <svg v-else-if="plan.nombre === 'Ganancia Muscular'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path></svg>
                                     <svg v-else-if="plan.nombre === 'Resistencia'" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
@@ -128,11 +165,18 @@ const planes = [
                                 </div>
                             </div>
 
-                            <div v-if="planSeleccionado === plan.nombre" class="text-[#00BFA5]">
+                            <div v-if="selectedPlanId === plan.id" class="text-[#00BFA5]">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
                             </div>
                         </div>
                     </div>
+                    <p v-if="!planesFiltrados.length" class="text-gray-500 text-sm">No hay planes disponibles para esta modalidad.</p>
+                </div>
+
+                <div class="mt-10">
+                    <button @click="asignarPlan" :disabled="form.processing || !clienteSeleccionado" class="w-full bg-[#00BFA5] hover:bg-[#009688] text-white font-bold py-4 rounded-xl transition shadow-lg shadow-[#00BFA5]/20 disabled:opacity-50">
+                        Asignar Plan
+                    </button>
                 </div>
 
             </div>

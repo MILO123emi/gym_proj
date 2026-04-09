@@ -1,16 +1,20 @@
 <script setup>
 import GymLayout from '@/Layouts/GymLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { Head, router } from '@inertiajs/vue3';
 
-const periodoActivo = ref('Este Mes');
-const periodos = ['Esta Semana', 'Este Mes', 'Trimestre', 'Año'];
+const props = defineProps({
+    periodoActivo: { type: String, default: 'Este Mes' },
+    periodos: { type: Array, default: () => ['Esta Semana', 'Este Mes', 'Trimestre', 'Año'] },
+    totalIngresosFormatted: { type: String, default: 'L 0' },
+    ingresosPorContrato: { type: Array, default: () => [] },
+    clientesEnMora: { type: Number, default: 0 },
+    montoPendienteFormatted: { type: String, default: 'L 0' },
+    clientesNuevos: { type: Number, default: 0 },
+});
 
-const ingresosPorContrato = [
-    { tipo: 'Mensual', monto: '$45,000 MXN', porcentaje: 30.5, color: 'bg-blue-500' },
-    { tipo: 'Semestral', monto: '$54,000 MXN', porcentaje: 36.6, color: 'bg-purple-500' },
-    { tipo: 'Anual', monto: '$48,500 MXN', porcentaje: 32.9, color: 'bg-[#00BFA5]' }
-];
+const changePeriodo = (p) => {
+    router.get(route('reportes.financieros'), { periodo: p }, { preserveScroll: true, preserveState: true });
+};
 </script>
 
 <template>
@@ -34,7 +38,7 @@ const ingresosPorContrato = [
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 </div>
                 <button v-for="p in periodos" :key="p" 
-                        @click="periodoActivo = p"
+                        @click="changePeriodo(p)"
                         :class="periodoActivo === p ? 'bg-[#00BFA5] text-white shadow-lg' : 'text-gray-400 hover:text-white'"
                         class="px-4 py-1.5 rounded-lg text-xs font-bold transition">
                     {{ p }}
@@ -54,7 +58,7 @@ const ingresosPorContrato = [
                     </div>
                     <div>
                         <p class="text-gray-500 text-sm font-medium uppercase tracking-wider">Ingresos Totales</p>
-                        <h2 class="text-5xl font-black text-white mt-1">$147,500 <span class="text-lg text-gray-600 font-bold uppercase">mxn</span></h2>
+                        <h2 class="text-5xl font-black text-white mt-1">{{ totalIngresosFormatted }} <span class="text-lg text-gray-600 font-bold uppercase">hnl</span></h2>
                     </div>
                 </div>
             </div>
@@ -62,13 +66,14 @@ const ingresosPorContrato = [
             <div class="bg-[#111111] border border-white/5 rounded-2xl p-8 mb-8">
                 <h3 class="text-white font-bold mb-8">Ingresos por Tipo de Contrato</h3>
                 <div class="space-y-8">
+                    <p v-if="!ingresosPorContrato.length" class="text-gray-500 text-sm">No hay ingresos en este periodo.</p>
                     <div v-for="item in ingresosPorContrato" :key="item.tipo">
                         <div class="flex justify-between items-end mb-2">
                             <span class="text-sm text-white font-bold">{{ item.tipo }}</span>
                             <span class="text-sm text-white font-black">{{ item.monto }}</span>
                         </div>
                         <div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                            <div :class="item.color" class="h-full transition-all duration-1000" :style="{ width: item.porcentaje + '%' }"></div>
+                            <div class="h-full transition-all duration-1000" :style="{ width: item.porcentaje + '%', backgroundColor: item.color_hex || '#00BFA5' }"></div>
                         </div>
                         <p class="text-[10px] text-gray-500 mt-2">{{ item.porcentaje }}% del total</p>
                     </div>
@@ -83,12 +88,12 @@ const ingresosPorContrato = [
                         </div>
                         <div>
                             <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Clientes en Mora</p>
-                            <h4 class="text-2xl font-black text-white">4</h4>
+                            <h4 class="text-2xl font-black text-white">{{ clientesEnMora }}</h4>
                         </div>
                     </div>
                     <div class="flex justify-between items-end bg-white/5 p-4 rounded-xl border border-white/5">
                         <span class="text-gray-500 text-xs font-medium">Monto Pendiente</span>
-                        <span class="text-red-500 font-black">$3,260 MXN</span>
+                        <span class="text-red-500 font-black">{{ montoPendienteFormatted }}</span>
                     </div>
                 </div>
 
@@ -99,12 +104,12 @@ const ingresosPorContrato = [
                         </div>
                         <div>
                             <p class="text-gray-500 text-xs font-bold uppercase tracking-wider">Clientes Nuevos</p>
-                            <h4 class="text-2xl font-black text-white">8</h4>
+                            <h4 class="text-2xl font-black text-white">{{ clientesNuevos }}</h4>
                         </div>
                     </div>
                     <div class="flex justify-between items-end bg-white/5 p-4 rounded-xl border border-white/5">
                         <span class="text-gray-500 text-xs font-medium">En este periodo</span>
-                        <span class="text-[#00BFA5] bg-[#00BFA5]/10 px-2 py-0.5 rounded text-[10px] font-bold border border-[#00BFA5]/20">+8 miembros</span>
+                        <span class="text-[#00BFA5] bg-[#00BFA5]/10 px-2 py-0.5 rounded text-[10px] font-bold border border-[#00BFA5]/20">+{{ clientesNuevos }} miembros</span>
                     </div>
                 </div>
             </div>

@@ -1,15 +1,25 @@
 <script setup>
 import GymLayout from '@/Layouts/GymLayout.vue'; 
 import { Head, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+
+const props = defineProps({
+    membershipPlans: {
+        type: Array,
+        default: () => [],
+    },
+});
 
 const form = useForm({
     nombre_completo: '',
+    email: '',
+    cedula: '',
     telefono: '',
     fecha_nacimiento: '',
     direccion: '',
     contacto_emergencia: '',
-    plan_seleccionado: '',
+    membership_plan_id: null,
+    plan_tipo: '',
     metodo_pago: '',
 });
 
@@ -22,6 +32,8 @@ const steps = [
 
 // Cambiamos a ref para que sea reactivo
 const currentStep = ref(1); 
+const registeredClientName = ref('');
+const maxBirthDate = new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split('T')[0];
 
 const siguientePaso = () => {
     if (currentStep.value < 4) currentStep.value++;
@@ -31,13 +43,72 @@ const pasoAnterior = () => {
     if (currentStep.value > 1) currentStep.value--;
 };
 
+const canContinueStep = computed(() => {
+    if (currentStep.value === 1) {
+        return form.nombre_completo && form.email && form.cedula && form.telefono && form.fecha_nacimiento;
+    }
+
+    if (currentStep.value === 2) {
+        return form.membership_plan_id || form.plan_tipo;
+    }
+
+    if (currentStep.value === 3) {
+        return form.metodo_pago;
+    }
+
+    return true;
+});
+
+const continueOrSubmit = () => {
+    if (!canContinueStep.value) return;
+
+    if (currentStep.value === 3) {
+        submit();
+        return;
+    }
+
+    siguientePaso();
+};
+
 const submit = () => {
     form.post(route('clientes.store'), { 
-        onFinish: () => {
-            form.reset();
-            currentStep.value = 4; // Ir a la pantalla de éxito
+        onSuccess: () => {
+            registeredClientName.value = form.nombre_completo;
+            currentStep.value = 4;
         },
     });
+};
+
+const selectedPlan = computed(() => {
+    return availablePlans.value.find(p => p.id === form.membership_plan_id || p.tipo === form.plan_tipo) || null;
+});
+
+const totalToPay = computed(() => {
+    return selectedPlan.value ? Number(selectedPlan.value.precio) : 0;
+});
+
+const fallbackPlans = [
+    { id: null, tipo: 'mensual', nombre: 'Plan Mensual', descripcion: 'Acceso mensual', precio: 60 },
+    { id: null, tipo: 'semestral', nombre: 'Plan Semestral', descripcion: 'Acceso por 6 meses', precio: 280 },
+    { id: null, tipo: 'anual', nombre: 'Plan Anual', descripcion: 'Acceso anual', precio: 500 },
+];
+
+const availablePlans = computed(() => {
+    if (props.membershipPlans.length > 0) {
+        return props.membershipPlans.map(p => ({ ...p, tipo: p.tipo || '' }));
+    }
+    return fallbackPlans;
+});
+
+const selectPlan = (plan) => {
+    if (plan.id) {
+        form.membership_plan_id = plan.id;
+        form.plan_tipo = '';
+        return;
+    }
+
+    form.membership_plan_id = null;
+    form.plan_tipo = plan.tipo;
 };
 </script>
 
@@ -87,21 +158,40 @@ const submit = () => {
                 <div class="space-y-8">
                     <div>
                         <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Nombre Completo</label>
-                        <input v-model="form.nombre_completo" type="text" placeholder="Ej. Juan Pérez García" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none transition-all">
+                        <input v-model="form.nombre_completo" type="text" required pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,255}" placeholder="Ej. Juan Pérez García" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none transition-all">
+                        <p v-if="form.errors.nombre_completo" class="text-xs text-red-400 mt-1">{{ form.errors.nombre_completo }}</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Email</label>
+                            <input v-model="form.email" type="email" required placeholder="Ej. juan@email.com" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none transition-all">
+                            <p v-if="form.errors.email" class="text-xs text-red-400 mt-1">{{ form.errors.email }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Cédula</label>
+                            <input v-model="form.cedula" type="text" required placeholder="Ej. V-12345678" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none transition-all">
+                            <p v-if="form.errors.cedula" class="text-xs text-red-400 mt-1">{{ form.errors.cedula }}</p>
+                        </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Teléfono</label>
-                            <input v-model="form.telefono" type="tel" placeholder="Ej. 555-123-4567" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none">
+                            <input v-model="form.telefono" type="tel" required pattern="[2389][0-9]{7}" maxlength="8" placeholder="Ej. 98765432" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none">
+                            <p v-if="form.errors.telefono" class="text-xs text-red-400 mt-1">{{ form.errors.telefono }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Fecha de Nacimiento</label>
-                            <input v-model="form.fecha_nacimiento" type="date" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none [color-scheme:dark]">
+                            <input v-model="form.fecha_nacimiento" type="date" required :max="maxBirthDate" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none [color-scheme:dark]">
+                            <p v-if="form.errors.fecha_nacimiento" class="text-xs text-red-400 mt-1">{{ form.errors.fecha_nacimiento }}</p>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Dirección</label>
                         <input v-model="form.direccion" type="text" placeholder="Calle Principal #123" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gym-gray-text mb-2.5">Contacto de Emergencia</label>
+                        <input v-model="form.contacto_emergencia" type="text" placeholder="Ej. María Pérez - 555-000-0000" class="w-full px-5 py-4 bg-gym-input-bg text-white border border-gym-gray-border rounded-xl focus:ring-2 focus:ring-gym-green outline-none">
                     </div>
                 </div>
             </div>
@@ -112,13 +202,13 @@ const submit = () => {
                     Selección de Plan
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div v-for="plan in ['Mensual', 'Semestral', 'Anual']" :key="plan" 
-                         @click="form.plan_seleccionado = plan"
-                         :class="form.plan_seleccionado === plan ? 'border-gym-green bg-gym-green/10' : 'border-gym-gray-border bg-gym-input-bg'"
+                    <div v-for="plan in availablePlans" :key="plan.id || plan.tipo" 
+                         @click="selectPlan(plan)"
+                         :class="(plan.id ? form.membership_plan_id === plan.id : form.plan_tipo === plan.tipo) ? 'border-gym-green bg-gym-green/10' : 'border-gym-gray-border bg-gym-input-bg'"
                          class="p-8 rounded-2xl border-2 cursor-pointer transition-all hover:border-gym-green group text-center">
-                        <h3 class="text-white font-bold text-xl mb-2">{{ plan }}</h3>
-                        <p class="text-gym-gray-text text-sm">Acceso total a las instalaciones</p>
-                        <div class="mt-4 text-gym-green font-bold" v-if="form.plan_seleccionado === plan">Seleccionado</div>
+                        <h3 class="text-white font-bold text-xl mb-2">{{ plan.nombre }}</h3>
+                        <p class="text-gym-gray-text text-sm">{{ plan.descripcion || 'Acceso total a las instalaciones' }}</p>
+                        <div class="mt-4 text-gym-green font-bold" v-if="plan.id ? form.membership_plan_id === plan.id : form.plan_tipo === plan.tipo">Seleccionado</div>
                     </div>
                 </div>
             </div>
@@ -129,13 +219,19 @@ const submit = () => {
                     Método de Pago
                 </h2>
                 <div class="bg-gym-input-bg border border-gym-gray-border p-8 rounded-2xl mb-8">
-                    <div class="flex justify-between text-white mb-4"><span>Plan {{ form.plan_seleccionado }}</span><span class="font-bold">$580.00</span></div>
-                    <div class="flex justify-between text-gym-green text-xl font-black pt-4 border-t border-gym-gray-border"><span>Total a Pagar</span><span>$580.00 MXN</span></div>
+                    <div class="flex justify-between text-white mb-4">
+                        <span>Plan {{ selectedPlan?.nombre || '' }}</span>
+                        <span class="font-bold">L {{ totalToPay.toFixed(2) }}</span>
+                    </div>
+                    <div class="flex justify-between text-gym-green text-xl font-black pt-4 border-t border-gym-gray-border">
+                        <span>Total a Pagar</span>
+                        <span>L {{ totalToPay.toFixed(2) }} HNL</span>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <button v-for="metodo in ['Tarjeta', 'Efectivo']" :key="metodo"
-                            @click="form.metodo_pago = metodo"
-                            :class="form.metodo_pago === metodo ? 'bg-gym-green text-white' : 'bg-gym-input-bg text-gym-gray-text border-gym-gray-border'"
+                            @click="form.metodo_pago = metodo === 'Efectivo' ? 'efectivo' : 'tarjeta_debito'"
+                            :class="(metodo === 'Efectivo' ? form.metodo_pago === 'efectivo' : form.metodo_pago === 'tarjeta_debito') ? 'bg-gym-green text-white' : 'bg-gym-input-bg text-gym-gray-text border-gym-gray-border'"
                             class="py-4 rounded-xl border font-bold transition-all">
                         {{ metodo }}
                     </button>
@@ -147,8 +243,8 @@ const submit = () => {
                     <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M5 13l4 4L19 7"></path></svg>
                 </div>
                 <h2 class="text-3xl font-black text-white mb-4">¡Registro Exitoso!</h2>
-                <p class="text-gym-gray-text text-lg">El cliente <strong>{{ form.nombre_completo }}</strong> ha sido registrado en el sistema correctamente.</p>
-                <button @click="currentStep = 1" class="mt-10 text-gym-green font-bold hover:underline">Registrar otro cliente</button>
+                <p class="text-gym-gray-text text-lg">El cliente <strong>{{ registeredClientName }}</strong> ha sido registrado en el sistema correctamente.</p>
+                <button @click="(currentStep = 1, form.reset())" class="mt-10 text-gym-green font-bold hover:underline">Registrar otro cliente</button>
             </div>
 
             <div v-if="currentStep < 4" class="flex justify-between items-center mt-12 pt-8 border-t border-gym-gray-border">
@@ -161,8 +257,8 @@ const submit = () => {
                 
      
 
-    <button @click="currentStep === 3 ? (currentStep = 4, submit()) : siguientePaso()" 
-            class="bg-gym-green text-white px-10 py-4 rounded-2xl font-black hover:bg-opacity-90 transition-all shadow-lg shadow-gym-green/20 flex items-center gap-2">
+    <button @click="continueOrSubmit" :disabled="!canContinueStep || form.processing"
+            class="bg-gym-green text-white px-10 py-4 rounded-2xl font-black hover:bg-opacity-90 transition-all shadow-lg shadow-gym-green/20 flex items-center gap-2 disabled:opacity-50">
         {{ currentStep === 3 ? 'Finalizar Registro' : 'Siguiente' }}
         <svg v-if="currentStep < 3" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
     </button>

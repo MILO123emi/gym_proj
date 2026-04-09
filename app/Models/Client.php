@@ -13,6 +13,8 @@ class Client extends Model
         'email',
         'cedula',
         'fecha_nacimiento',
+        'direccion',
+        'contacto_emergencia',
         'estado',
         'user_id',
     ];

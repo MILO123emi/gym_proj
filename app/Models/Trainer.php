@@ -42,7 +42,7 @@ class Trainer extends Model
 
     public function getFullNameAttribute(): string
     {
-        return $this->user->nombre ?? '';
+        return $this->user?->name ?? '';
     }
 
     public function isActive(): bool
